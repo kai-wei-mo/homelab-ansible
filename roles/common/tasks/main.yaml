@@ -1,0 +1,5 @@
+---
+# Common system tasks
+
+- include_tasks: architecture.yaml
+- include_tasks: system-updates.yaml
