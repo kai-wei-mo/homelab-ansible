@@ -1,0 +1,9 @@
+---
+# Set normalized architecture fact for use across all roles
+- name: Set normalized architecture
+  set_fact:
+    normalized_arch: >-
+      {{ ansible_facts['architecture']
+        | replace('x86_64', 'amd64')
+        | replace('aarch64', 'arm64')
+      }}
