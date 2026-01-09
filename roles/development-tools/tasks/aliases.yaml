@@ -1,0 +1,47 @@
+---
+# Setup boot scripts
+- name: Check if boot repo exists
+  stat:
+    path: "{{ ansible_facts['env']['HOME'] }}/boot"
+  register: boot_repo
+
+- name: Clone boot repository
+  git:
+    repo: https://github.com/kai-wei-mo/boot.git
+    dest: "{{ ansible_facts['env']['HOME'] }}/boot"
+    version: 56ce4f34b75e94754ab2899b695546318d28c8cd
+  when: not boot_repo.stat.exists
+
+- name: Make main.sh executable
+  file:
+    path: "{{ ansible_facts['env']['HOME'] }}/boot/zsh/main.sh"
+    mode: "0755"
+
+- name: Run main.sh script
+  shell:
+    cmd: ./main.sh
+    chdir: "{{ ansible_facts['env']['HOME'] }}/boot/zsh"
+  register: main_output
+  changed_when: false
+
+- name: Make aliases_directory.sh executable
+  file:
+    path: "{{ ansible_facts['env']['HOME'] }}/boot/aliases/aliases_setup.sh"
+    mode: "0755"
+  when: not boot_repo.stat.exists
+
+- name: Run aliases_directory.sh script
+  shell:
+    cmd: bash aliases_setup.sh -y
+    chdir: "{{ ansible_facts['env']['HOME'] }}/boot/aliases"
+  register: alises_output
+  changed_when: false
+  become: true
+
+- name: Display script output
+  debug:
+    msg: "{{ main_output.stdout_lines }}"
+
+- name: Display aliases output
+  debug:
+    msg: "{{ alises_output.stdout_lines }}"
