@@ -1,0 +1,17 @@
+---
+# Development Tools Installation
+
+# Include individual tool installations
+- include_tasks: curl.yaml
+- include_tasks: git.yaml
+- include_tasks: jq.yaml
+- include_tasks: tree.yaml
+- include_tasks: vim.yaml
+- include_tasks: wget.yaml
+
+# # Shell enhancements
+- include_tasks: zsh.yaml
+- include_tasks: oh-my-zsh.yaml
+
+# Additional configurations
+- include_tasks: aliases.yaml
