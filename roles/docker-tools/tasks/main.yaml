@@ -1,0 +1,6 @@
+---
+# Docker Tools Installation
+
+# Include individual tool installations
+- include_tasks: docker.yaml
+- include_tasks: docker-compose.yaml
