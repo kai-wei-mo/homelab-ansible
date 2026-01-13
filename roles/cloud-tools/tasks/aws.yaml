@@ -1,0 +1,50 @@
+---
+# Install AWS CLI
+
+- name: Desired AWS CLI version
+  set_fact:
+    awscli_version: "2.32.23"
+
+- name: Get installed AWS CLI version (if any)
+  command: aws --version
+  register: awscli_installed
+  failed_when: false
+  changed_when: false
+
+- name: Combine AWS CLI output
+  set_fact:
+    awscli_version_output: "{{ awscli_installed.stdout ~ awscli_installed.stderr }}"
+
+- name: Parse installed AWS CLI version safely
+  set_fact:
+    awscli_installed_version: >-
+      {{
+        (awscli_version_output | regex_findall('aws-cli/([0-9.]+)'))[0]
+        if (awscli_version_output is search('aws-cli/'))
+        else ''
+      }}
+
+- name: Set AWS CLI architecture
+  set_fact:
+    awscli_arch: >-
+      {{ 'x86_64' if ansible_facts['architecture'] == 'x86_64'
+         else 'aarch64' }}
+
+- name: Download AWS CLI installer (pinned)
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ awscli_arch }}-{{ awscli_version }}.zip"
+    dest: /tmp/awscliv2.zip
+    mode: "0644"
+  when: awscli_installed_version != awscli_version
+
+- name: Unzip AWS CLI installer
+  unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+  when: awscli_installed_version != awscli_version
+
+- name: Install AWS CLI (only if version changed)
+  command: /tmp/aws/install --update
+  become: true
+  when: awscli_installed_version != awscli_version

@@ -1,0 +1,41 @@
+---
+# Install Terraform
+
+- name: Desired Terraform version
+  set_fact:
+    terraform_version: "1.14.3"
+
+- name: Get installed Terraform version (if any)
+  command: terraform version -json
+  register: terraform_installed
+  failed_when: false
+  changed_when: false
+
+- name: Parse installed Terraform version
+  set_fact:
+    terraform_installed_version: "{{ terraform_installed.stdout | from_json | json_query('terraform_version') }}"
+  when: terraform_installed.rc == 0
+
+- name: Add HashiCorp GPG key
+  apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+  become: true
+
+- name: Add HashiCorp repository
+  apt_repository:
+    repo: >-
+      deb [arch={{ normalized_arch }}]
+      https://apt.releases.hashicorp.com
+      {{ ansible_facts['distribution_release'] }} main
+    filename: hashicorp
+    state: present
+  become: true
+
+- name: Install pinned Terraform version
+  apt:
+    name: "terraform={{ terraform_version }}*"
+    state: present
+    update_cache: true
+  become: true
+  when: terraform_installed_version != terraform_version
