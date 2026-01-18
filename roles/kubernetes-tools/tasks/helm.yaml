@@ -1,0 +1,22 @@
+- name: Download Helm tarball
+  get_url:
+    url: "https://get.helm.sh/helm-v3.14.4-linux-{{ normalized_arch }}.tar.gz"
+    dest: /tmp/helm.tar.gz
+    mode: "0644"
+
+- name: Extract Helm
+  unarchive:
+    src: /tmp/helm.tar.gz
+    dest: /tmp
+    remote_src: true
+
+- name: Install Helm binary
+  copy:
+    src: "/tmp/linux-{{ normalized_arch }}/helm"
+    dest: /usr/local/bin/helm
+    mode: "0755"
+    remote_src: true
+
+- name: Verify Helm install
+  command: helm version --short
+  changed_when: false
