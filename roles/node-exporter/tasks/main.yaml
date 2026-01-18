@@ -1,0 +1,4 @@
+---
+# Node metrics exporter
+
+- include_tasks: prometheus-node-exporter.yaml
