@@ -1,0 +1,59 @@
+---
+- name: Set kubeconfig path
+  set_fact:
+    k3s_kubeconfig: "{{ k3s_kubeconfig | default('/etc/rancher/k3s/k3s.yaml', true) }}"
+
+- name: Add Argo CD Helm repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: https://argoproj.github.io/argo-helm
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Create argocd namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: argocd
+    state: present
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Install Argo CD CRDs
+  kubernetes.core.k8s:
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    state: present
+    src: "{{ item }}"
+  loop:
+    - https://raw.githubusercontent.com/argoproj/argo-cd/v3.2.3/manifests/crds/application-crd.yaml
+    - https://raw.githubusercontent.com/argoproj/argo-cd/v3.2.3/manifests/crds/applicationset-crd.yaml
+    - https://raw.githubusercontent.com/argoproj/argo-cd/v3.2.3/manifests/crds/appproject-crd.yaml
+
+- name: Install / upgrade Argo CD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "9.2.2"
+    release_namespace: argocd
+    create_namespace: false
+    values: "{{ lookup('file', role_path + '/files/values.yaml') | from_yaml }}"
+    wait: true
+    timeout: 10m
+    state: present
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Create GitHub token secret
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'core-infra-repo-secret.yaml') | from_yaml }}"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Deploy GitHub Application
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'core-infra-application.yaml') | from_yaml }}"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Deploy Argo CD ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'ingress.yaml') | from_yaml }}"
+    kubeconfig: "{{ k3s_kubeconfig }}"

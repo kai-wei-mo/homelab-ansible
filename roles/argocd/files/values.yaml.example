@@ -1,0 +1,11 @@
+configs:
+  cm:
+    url: https://argocd.kwm.local
+  secret:
+    argocdServerAdminPassword: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+server:
+  service:
+    type: ClusterIP
+  extraArgs:
+    - --insecure
