@@ -1,0 +1,9 @@
+---
+- name: Install NFS server packages
+  import_tasks: ./install.yaml
+
+- name: Configure NFS exports
+  import_tasks: ./config.yaml
+
+- name: Enable and start NFS service
+  import_tasks: ./service.yaml
