@@ -1,0 +1,28 @@
+---
+- name: Create NFS export directory
+  file:
+    path: "{{ nfs_export_path | default('/srv/nfs') }}"
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: "0777"
+
+- name: Ensure exports.d directory exists
+  file:
+    path: /etc/exports.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure exports file
+  copy:
+    dest: /etc/exports.d/home.exports
+    content: |
+      {{ nfs_export_path | default('/srv/nfs') }} {{ nfs_export_clients | default('192.168.1.0/24') }}(rw,sync,no_subtree_check,no_root_squash)
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload exports
+  command: exportfs -ra

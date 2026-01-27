@@ -1,0 +1,7 @@
+---
+- name: Install NFS server (Debian/Ubuntu)
+  apt:
+    name: nfs-kernel-server
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"

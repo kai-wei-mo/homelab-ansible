@@ -1,0 +1,10 @@
+---
+- name: Enable NFS server service
+  systemd:
+    name: nfs-kernel-server
+    enabled: true
+
+- name: Start NFS server service
+  systemd:
+    name: nfs-kernel-server
+    state: started
