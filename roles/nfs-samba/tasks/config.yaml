@@ -1,0 +1,70 @@
+---
+- name: Install Samba packages
+  apt:
+    name:
+      - samba
+      - samba-common-bin
+    state: present
+    update_cache: yes
+
+- name: Ensure sambashare group exists
+  group:
+    name: sambashare
+    state: present
+
+- name: Ensure samba user exists
+  user:
+    name: sambauser
+    group: sambashare
+    shell: /usr/sbin/nologin
+    create_home: no
+    system: yes
+
+- name: Set samba password
+  command: smbpasswd -a -s sambauser
+  args:
+    stdin: "password\npassword"
+  no_log: true
+
+- name: Create share directory
+  file:
+    path: /srv/samba
+    state: directory
+    owner: sambauser
+    group: sambashare
+    mode: "0775"
+
+- name: Configure Samba share
+  blockinfile:
+    path: /etc/samba/smb.conf
+    marker: "# {mark} ANSIBLE MANAGED SAMBA SHARE"
+    block: |
+      [shared]
+          path = /srv/samba
+          browseable = yes
+          read only = no
+          writable = yes
+          guest ok = no
+          valid users = @sambashare
+          create mask = 0664
+          directory mask = 0775
+  notify: restart samba
+
+- name: Enable Samba services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - smbd
+    - nmbd
+
+- name: restart samba
+  service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - smbd
+    - nmbd
+
+# net use N: \\192.168.1.90\shared
