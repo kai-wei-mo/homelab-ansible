@@ -1,0 +1,74 @@
+---
+- name: Install cloudflared
+  get_url:
+    url: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+    dest: /tmp/cloudflared.deb
+
+- name: Install package
+  apt:
+    deb: /tmp/cloudflared.deb
+
+- name: Ensure config directory exists
+  file:
+    path: "{{ cloudflared_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create tunnel
+  command: cloudflared tunnel create {{ tunnel_name }}
+  environment:
+    CLOUDFLARE_API_TOKEN: "{{ lookup('env','CLOUDFLARE_API_TOKEN') }}"
+  register: tunnel_create
+  changed_when: "'Created tunnel' in tunnel_create.stdout"
+  ignore_errors: true
+
+- name: Get tunnel ID
+  command: cloudflared tunnel list
+  register: tunnel_list
+
+- name: Extract tunnel ID
+  set_fact:
+    tunnel_id: "{{ tunnel_list.stdout_lines | select('search', tunnel_name) | list | first | regex_search('([a-f0-9-]{36})') }}"
+
+- name: Move credentials file
+  copy:
+    src: "/root/.cloudflared/{{ tunnel_id }}.json"
+    dest: "{{ cloudflared_dir }}/credentials.json"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Create DNS route
+  command: cloudflared tunnel route dns {{ tunnel_name }} {{ domain }}
+  environment:
+    CLOUDFLARE_API_TOKEN: "{{ lookup('env','CLOUDFLARE_API_TOKEN') }}"
+  ignore_errors: true
+
+- name: Create config.yml
+  copy:
+    dest: "{{ cloudflared_dir }}/config.yml"
+    content: |
+      tunnel: {{ tunnel_name }}
+      credentials-file: {{ cloudflared_dir }}/credentials.json
+
+      ingress:
+        - hostname: {{ domain }}
+          service: http://localhost:80
+        - service: http_status:404
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install systemd service
+  command: cloudflared service install
+  args:
+    creates: /etc/systemd/system/cloudflared.service
+
+- name: Enable and start cloudflared
+  systemd:
+    name: cloudflared
+    enabled: true
+    state: started

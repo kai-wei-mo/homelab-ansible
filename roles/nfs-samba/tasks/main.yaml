@@ -1,0 +1,9 @@
+---
+- name: Install Samba
+  import_tasks: install.yaml
+
+- name: Configure Samba share
+  import_tasks: config.yaml
+
+- name: Enable and start Samba
+  import_tasks: service.yaml
