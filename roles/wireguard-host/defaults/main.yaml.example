@@ -1,0 +1,21 @@
+---
+# Homelab Proton WireGuard (qbittorrent2 profile, US-IL#927, NAT-PMP on). Do not publish this publicly.
+wireguard_host_enabled: true
+
+wireguard_interface: wg0
+
+wireguard_private_key: "XXX"
+wireguard_address: "XXX/32, XXXX/128"
+wireguard_dns: "XXX"
+
+wireguard_peer_public_key: "XXX"
+wireguard_peer_allowed_ips: "0.0.0.0/0, ::/0"
+wireguard_peer_endpoint: "XXX:51820"
+wireguard_persistent_keepalive: 25
+
+# Optional extra lines under [Interface] (e.g. PostUp for LAN/CNI on k3s).
+wireguard_extra_interface_lines: []
+
+# Full-tunnel VPN often breaks apt against us.archive.ubuntu.com (InRelease NOSPLIT / “no longer signed”).
+# Keep false; run `wg-quick down wg0` (or -e wireguard_host_apt_update_cache=true on LAN) when you need apt update.
+wireguard_host_apt_update_cache: false
