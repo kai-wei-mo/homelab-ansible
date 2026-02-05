@@ -1,0 +1,37 @@
+---
+- name: WireGuard (host)
+  when: wireguard_host_enabled | bool
+  block:
+    - name: Assert WireGuard secrets are defined
+      ansible.builtin.assert:
+        that:
+          - wireguard_private_key | length > 0
+          - wireguard_address | length > 0
+          - wireguard_peer_public_key | length > 0
+          - wireguard_peer_endpoint | length > 0
+        fail_msg: >-
+          Set wireguard_* variables (use ansible-vault). See roles/wireguard-host/defaults/main.yaml.
+
+    - name: Install WireGuard packages
+      ansible.builtin.apt:
+        name:
+          - wireguard
+          - wireguard-tools
+        state: present
+        update_cache: "{{ wireguard_host_apt_update_cache | bool }}"
+
+    - name: Deploy WireGuard config
+      ansible.builtin.template:
+        src: wg0.conf.j2
+        dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
+        owner: root
+        group: root
+        mode: "0600"
+      notify: Restart WireGuard interface
+
+    - name: Enable and start wg-quick
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wireguard_interface }}"
+        enabled: true
+        state: started
+        daemon_reload: true

@@ -1,0 +1,16 @@
+# Ansible managed — {{ ansible_managed }}
+[Interface]
+PrivateKey = {{ wireguard_private_key }}
+Address = {{ wireguard_address }}
+{% if wireguard_dns | length > 0 %}
+DNS = {{ wireguard_dns }}
+{% endif %}
+{% for line in wireguard_extra_interface_lines %}
+{{ line }}
+{% endfor %}
+
+[Peer]
+PublicKey = {{ wireguard_peer_public_key }}
+AllowedIPs = {{ wireguard_peer_allowed_ips }}
+Endpoint = {{ wireguard_peer_endpoint }}
+PersistentKeepalive = {{ wireguard_persistent_keepalive }}
