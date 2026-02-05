@@ -1,0 +1,5 @@
+---
+# Optional: override role defaults in host_vars / group_vars (or use ansible-vault).
+# Live values for this homelab live in roles/wireguard-host/defaults/main.yaml.
+
+wireguard_host_enabled: false
