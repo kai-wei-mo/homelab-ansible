@@ -1,0 +1,15 @@
+- name: Setup Homeserver Environment
+  hosts: all
+  become: true
+  roles:
+    # System setup and common dependencies
+    - common
+
+    # Tools and binaries
+    - development-tools
+    - cloud-tools
+    - docker-tools
+    - kubernetes-tools
+
+    # Node exporter
+    # - node-exporter  # keep this disabled if using k8s node-exporter
