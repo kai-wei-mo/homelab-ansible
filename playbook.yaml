@@ -17,3 +17,7 @@
     # k8s
     - k3s
     - argocd
+
+    # nfs
+    - nfs
+    - nfs-samba
