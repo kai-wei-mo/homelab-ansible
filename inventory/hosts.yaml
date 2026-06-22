@@ -1,0 +1,25 @@
+---
+all:
+  hosts:
+    xps13-9350:
+      ansible_host: 192.168.86.90
+    # mac-mini-i5:
+    #   ansible_host: 192.168.86.91
+    # thinkcentre-m93p:
+    #   ansible_host: 192.168.86.92
+
+  children:
+    # Runs k3s + Argo CD.
+    k3s:
+      hosts:
+        xps13-9350:
+
+    # Serves NFS + Samba shares.
+    nas:
+      hosts:
+        xps13-9350:
+
+    # Runs cloudflared tunnel + WireGuard (Proton) client.
+    vpn:
+      hosts:
+        xps13-9350:
