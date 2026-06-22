@@ -1,7 +1,7 @@
-nfs://192.168.1.90/srv/nfs
+nfs://192.168.86.90/srv/nfs
 
 sudo mkdir -p /Volumes/nfs-xps-13
-sudo mount -t nfs -o resvport,nolocks 192.168.1.90:/srv/nfs /Volumes/nfs-xps-13
+sudo mount -t nfs -o resvport,nolocks 192.168.86.90:/srv/nfs /Volumes/nfs-xps-13
 ls /Volumes/nfs-xps-13
 
 
@@ -47,11 +47,11 @@ Restart:
 
 Restart-Computer
 Then mount the share
-net use N: \\192.168.1.90\storage
+net use N: \\192.168.86.90\storage
 
 or
 
-net use N: \\192.168.1.90\samba-storage
+net use N: \\192.168.86.90\samba-storage
 
 (no username/password needed if guest ok = yes)
 
@@ -61,6 +61,6 @@ dir
 
 If it still fails, run:
 
-net view \\192.168.1.90
+net view \\192.168.86.90
 
 to confirm Windows sees the share.
