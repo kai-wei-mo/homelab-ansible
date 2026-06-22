@@ -1,0 +1,15 @@
+---
+# Hosts in the `vpn` group: cloudflared tunnel + WireGuard (Proton) client.
+
+# --- cloudflared ---
+tunnel_name: homelab
+domain: plex.chaewon.io
+cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
+
+# --- WireGuard (Proton, qbittorrent2 profile, US-IL#927, NAT-PMP on) ---
+wireguard_host_enabled: true
+wireguard_private_key: "{{ vault_wireguard_private_key }}"
+wireguard_address: "{{ vault_wireguard_address }}"
+wireguard_dns: "{{ vault_wireguard_dns }}"
+wireguard_peer_public_key: "{{ vault_wireguard_peer_public_key }}"
+wireguard_peer_endpoint: "{{ vault_wireguard_peer_endpoint }}"

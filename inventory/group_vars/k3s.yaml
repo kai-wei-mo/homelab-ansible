@@ -1,0 +1,5 @@
+---
+# Hosts in the `k3s` group: k3s + Argo CD.
+
+argocd_admin_password_bcrypt: "{{ vault_argocd_admin_password_bcrypt }}"
+argocd_repo_github_pat: "{{ vault_argocd_repo_github_pat }}"
