@@ -19,7 +19,7 @@
   copy:
     dest: /etc/exports.d/home.exports
     content: |
-      {{ nfs_export_path | default('/srv/nfs') }} {{ nfs_export_clients | default('192.168.1.0/24') }}(rw,sync,no_subtree_check,no_root_squash)
+      {{ nfs_export_path | default('/srv/nfs') }} {{ nfs_export_clients | default('192.168.86.0/24') }}(rw,sync,no_subtree_check,no_root_squash)
     owner: root
     group: root
     mode: "0644"
