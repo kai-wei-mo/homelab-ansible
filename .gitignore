@@ -1,0 +1,8 @@
+.DS_Store
+
+# Vault password — never commit this. (vault.yaml itself IS committed, encrypted.)
+.vault-password
+# Runtime / generated
+**/credentials.json
+roles/k3s/tasks/kubeconfig
+.ansible-tmp/
