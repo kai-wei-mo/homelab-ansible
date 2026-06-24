@@ -1,0 +1,32 @@
+---
+# Safe defaults only — real site config lives in inventory/group_vars/ and
+# the auth key lives in inventory/group_vars/all/vault.yaml (ansible-vault).
+
+# Off by default; enabled for real hosts via inventory group_vars.
+tailscale_host_enabled: false
+
+# Reusable, tagged auth key. Create at
+# https://login.tailscale.com/admin/settings/keys and store it in the vault.
+tailscale_auth_key: ""
+
+# Shown in the Tailscale admin console; defaults to the Ansible inventory hostname.
+tailscale_hostname: ""
+
+# Enable Tailscale SSH (https://tailscale.com/kb/1193/tailscale-ssh).
+tailscale_ssh: true
+
+# Advertise LAN routes so other tailnet devices can reach services on your home network.
+# After the first `tailscale up`, approve the routes in the Tailscale admin console.
+tailscale_advertise_routes: []
+# Example:
+# tailscale_advertise_routes:
+#   - "192.168.86.0/24"
+
+# Offer this host as a tailnet exit node (optional).
+tailscale_advertise_exit_node: false
+
+# Accept subnet routes advertised by other nodes on your tailnet.
+tailscale_accept_routes: false
+
+# Extra flags passed verbatim to `tailscale up` (optional).
+tailscale_extra_up_args: ""
