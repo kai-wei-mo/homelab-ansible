@@ -1,0 +1,50 @@
+---
+# Run everything:            ansible-playbook site.yaml
+# Only one host:             ansible-playbook site.yaml --limit xps13-9350
+# Only tailscale:            ansible-playbook site.yaml --tags tailscale
+
+- name: Base setup (every host)
+  hosts: all
+  become: true
+  roles:
+    - role: common
+      tags: [common]
+    - role: development-tools
+      tags: [dev-tools]
+    - role: cloud-tools
+      tags: [cloud-tools]
+    - role: docker-tools
+      tags: [docker]
+    - role: kubernetes-tools
+      tags: [kube-tools]
+    - role: tailscale-host
+      tags: [tailscale, networking]
+    # - role: node-exporter  # keep disabled if using k8s node-exporter
+    #   tags: [monitoring]
+
+- name: Kubernetes hosts
+  hosts: k3s
+  become: true
+  roles:
+    - role: k3s
+      tags: [k3s]
+    - role: argocd
+      tags: [argocd]
+
+- name: NAS hosts
+  hosts: nas
+  become: true
+  roles:
+    - role: nfs
+      tags: [nfs]
+    - role: nfs-samba
+      tags: [samba]
+
+- name: VPN / tunnel hosts
+  hosts: vpn
+  become: true
+  roles:
+    - role: cloudflared
+      tags: [cloudflared, networking]
+    - role: wireguard-host
+      tags: [wireguard, networking]
