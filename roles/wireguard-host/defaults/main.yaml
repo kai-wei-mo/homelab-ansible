@@ -1,16 +1,19 @@
 ---
-# Homelab Proton WireGuard (qbittorrent2 profile, US-IL#927, NAT-PMP on). Do not publish this publicly.
-wireguard_host_enabled: true
+# Safe defaults only — real site config lives in inventory/group_vars/vpn.yaml
+# and secrets live in inventory/group_vars/all/vault.yaml (ansible-vault).
+
+# Off by default; enabled for the `vpn` group via inventory group_vars.
+wireguard_host_enabled: false
 
 wireguard_interface: wg0
 
-wireguard_private_key: "XXX"
-wireguard_address: "XXX/32, XXXX/128"
-wireguard_dns: "XXX"
+wireguard_private_key: ""
+wireguard_address: ""
+wireguard_dns: ""
 
-wireguard_peer_public_key: "XXX"
+wireguard_peer_public_key: ""
 wireguard_peer_allowed_ips: "0.0.0.0/0, ::/0"
-wireguard_peer_endpoint: "XXX:51820"
+wireguard_peer_endpoint: ""
 wireguard_persistent_keepalive: 25
 
 # Optional extra lines under [Interface] (e.g. PostUp for LAN/CNI on k3s).
