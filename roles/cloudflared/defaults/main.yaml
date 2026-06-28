@@ -3,3 +3,6 @@ tunnel_name: homelab
 cloudflared_dir: /etc/cloudflared
 domain: plex.chaewon.io
 cloudflared_origin_cert_path: /etc/cloudflared/cert.pem
+
+# Cloudflare API token; real value comes from the vault via inventory group_vars.
+cloudflare_api_token: ""
