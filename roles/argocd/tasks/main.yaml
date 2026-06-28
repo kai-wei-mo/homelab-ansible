@@ -34,7 +34,7 @@
     chart_version: "9.2.2"
     release_namespace: argocd
     create_namespace: false
-    values: "{{ lookup('file', role_path + '/files/values.yaml') | from_yaml }}"
+    values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
     wait: true
     timeout: 10m
     state: present
@@ -43,7 +43,7 @@
 - name: Create GitHub token secret
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('file', 'core-infra-repo-secret.yaml') | from_yaml }}"
+    definition: "{{ lookup('template', 'core-infra-repo-secret.yaml.j2') | from_yaml }}"
     kubeconfig: "{{ k3s_kubeconfig }}"
 
 - name: Deploy GitHub Application
