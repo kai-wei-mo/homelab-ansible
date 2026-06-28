@@ -10,7 +10,8 @@
           - wireguard_peer_public_key | length > 0
           - wireguard_peer_endpoint | length > 0
         fail_msg: >-
-          Set wireguard_* variables (use ansible-vault). See roles/wireguard-host/defaults/main.yaml.
+          Set vault_wireguard_* variables in inventory/group_vars/all/vault.yaml
+          (ansible-vault edit inventory/group_vars/all/vault.yaml).
 
     - name: Install WireGuard packages
       ansible.builtin.apt:
