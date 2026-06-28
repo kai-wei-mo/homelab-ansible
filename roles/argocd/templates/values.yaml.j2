@@ -1,0 +1,11 @@
+configs:
+  cm:
+    url: {{ argocd_url }}
+  secret:
+    argocdServerAdminPassword: "{{ argocd_admin_password_bcrypt }}"
+
+server:
+  service:
+    type: ClusterIP
+  extraArgs:
+    - --insecure
