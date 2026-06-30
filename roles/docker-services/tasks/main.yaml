@@ -1,0 +1,4 @@
+- name: Deploy Portainer
+  community.docker.docker_compose:
+    project_src: /opt/docker/portainer
+    state: present
