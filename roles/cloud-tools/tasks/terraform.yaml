@@ -37,5 +37,6 @@
     name: "terraform={{ terraform_version }}*"
     state: present
     update_cache: true
+    allow_downgrades: true
   become: true
-  when: terraform_installed_version != terraform_version
+  when: (terraform_installed_version | default('')) != terraform_version
