@@ -22,6 +22,13 @@
     # - role: node-exporter  # keep disabled if using k8s node-exporter
     #   tags: [monitoring]
 
+- name: Local storage mounts
+  hosts: nas
+  become: true
+  roles:
+    - role: local-storage
+      tags: [local-storage, storage]
+
 - name: Kubernetes hosts
   hosts: k3s
   become: true

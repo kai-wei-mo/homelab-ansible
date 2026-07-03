@@ -1,0 +1,36 @@
+---
+- name: Install exFAT filesystem tools
+  apt:
+    name: exfatprogs
+    state: present
+    update_cache: true
+  when: local_storage_mounts | length > 0
+
+- name: Ensure mount points exist
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ local_storage_mounts }}"
+
+- name: Add fstab entries for local storage volumes
+  lineinfile:
+    path: /etc/fstab
+    regexp: '^\S+\s+{{ item.path | regex_escape }}\s+'
+    line: "{{ item.device }} {{ item.path }} {{ item.fstype }} {{ item.opts }} 0 0"
+    state: present
+  loop: "{{ local_storage_mounts }}"
+
+- name: Check whether local storage volumes are mounted
+  command: findmnt -n -T {{ item.path }}
+  loop: "{{ local_storage_mounts }}"
+  register: local_storage_mount_check
+  changed_when: false
+  failed_when: false
+
+- name: Mount local storage volumes
+  command: mount {{ item.item.path }}
+  loop: "{{ local_storage_mount_check.results }}"
+  when: item.rc != 0
