@@ -5,6 +5,7 @@
 tunnel_name: homelab
 domain: plex.chaewon.io
 cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
+cloudflared_origin_cert: "{{ vault_cloudflared_origin_cert }}"
 
 # --- WireGuard (Proton, qbittorrent2 profile, US-IL#927, NAT-PMP on) ---
 wireguard_host_enabled: true

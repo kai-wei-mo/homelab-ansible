@@ -1,4 +1,16 @@
 ---
+- name: Assert Cloudflare secrets are defined
+  ansible.builtin.assert:
+    that:
+      - cloudflared_origin_cert | length > 0
+      - cloudflare_api_token | length > 0
+    fail_msg: >-
+      Set vault_cloudflared_origin_cert and vault_cloudflare_api_token in
+      inventory/group_vars/all/vault.yaml
+      (ansible-vault edit inventory/group_vars/all/vault.yaml).
+      Origin cert: run `cloudflared tunnel login` once on any machine, then copy
+      ~/.cloudflared/cert.pem into the vault.
+
 - name: Install cloudflared
   get_url:
     url: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
@@ -16,16 +28,38 @@
     group: root
     mode: "0755"
 
+- name: Deploy Cloudflare origin certificate
+  copy:
+    dest: "{{ cloudflared_origin_cert_path }}"
+    content: "{{ cloudflared_origin_cert }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Set cloudflared CLI environment
+  set_fact:
+    cloudflared_env:
+      TUNNEL_ORIGIN_CERT: "{{ cloudflared_origin_cert_path }}"
+      CLOUDFLARE_API_TOKEN: "{{ cloudflare_api_token }}"
+
+- name: Check for existing tunnel credentials
+  stat:
+    path: "{{ cloudflared_dir }}/credentials.json"
+  register: cloudflared_credentials
+
 - name: Create tunnel
   command: cloudflared tunnel create {{ tunnel_name }}
-  environment:
-    CLOUDFLARE_API_TOKEN: "{{ cloudflare_api_token }}"
+  environment: "{{ cloudflared_env }}"
   register: tunnel_create
   changed_when: "'Created tunnel' in tunnel_create.stdout"
-  ignore_errors: true
+  failed_when:
+    - tunnel_create.rc != 0
+    - "'already exists' not in tunnel_create.stderr"
+  when: not cloudflared_credentials.stat.exists
 
 - name: Get tunnel ID
   command: cloudflared tunnel list
+  environment: "{{ cloudflared_env }}"
   register: tunnel_list
 
 - name: Extract tunnel ID
@@ -34,18 +68,22 @@
 
 - name: Move credentials file
   copy:
-    src: "/root/.cloudflared/{{ tunnel_id }}.json"
+    src: "{{ cloudflared_dir }}/{{ tunnel_id }}.json"
     dest: "{{ cloudflared_dir }}/credentials.json"
     remote_src: true
     owner: root
     group: root
     mode: "0600"
+  when: not cloudflared_credentials.stat.exists
 
 - name: Create DNS route
   command: cloudflared tunnel route dns {{ tunnel_name }} {{ domain }}
-  environment:
-    CLOUDFLARE_API_TOKEN: "{{ cloudflare_api_token }}"
-  ignore_errors: true
+  environment: "{{ cloudflared_env }}"
+  register: dns_route
+  changed_when: dns_route.rc == 0
+  failed_when:
+    - dns_route.rc != 0
+    - "'already exists' not in dns_route.stderr"
 
 - name: Create config.yml
   copy:
