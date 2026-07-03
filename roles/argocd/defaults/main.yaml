@@ -1,5 +1,5 @@
 ---
-argocd_url: https://argocd.kwm.local
+argocd_url: https://argocd.home.chaewon.io
 argocd_core_infra_repo_url: https://github.com/kai-wei-mo/homelab-core-infra.git
 
 # bcrypt hash of the Argo CD admin password (generate: argocd account bcrypt --password '...')
