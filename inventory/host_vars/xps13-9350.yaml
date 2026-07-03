@@ -1,3 +1,10 @@
 ---
 tailscale_advertise_routes:
   - "192.168.86.0/24"
+
+# External Seagate drive (exFAT), mounted by the local-storage role.
+local_storage_mounts:
+  - device: LABEL=Seagate
+    path: /mnt/seagate
+    fstype: exfat
+    opts: defaults,nofail,noatime,x-systemd.device-timeout=10

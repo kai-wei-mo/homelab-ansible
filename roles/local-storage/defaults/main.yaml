@@ -1,0 +1,11 @@
+---
+# Safe defaults only — real mounts are defined per host in
+# inventory/host_vars/<hostname>.yaml.
+
+local_storage_mounts: []
+# Example:
+# local_storage_mounts:
+#   - device: LABEL=Seagate
+#     path: /mnt/seagate
+#     fstype: exfat
+#     opts: defaults,nofail,noatime,x-systemd.device-timeout=10
