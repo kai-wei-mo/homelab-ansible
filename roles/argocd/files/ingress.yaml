@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
 spec:
   rules:
-    - host: argocd.kwm.local
+    - host: argocd.home.chaewon.io
       http:
         paths:
           - path: /
