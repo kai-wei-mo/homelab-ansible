@@ -1,11 +1,34 @@
 ---
-- name: Create NFS export directory
+- name: Create NFS export root
   file:
-    path: "{{ nfs_export_path | default('/srv/nfs') }}"
+    path: "{{ nfs_export_root }}"
     state: directory
-    owner: nobody
-    group: nogroup
-    mode: "0777"
+    owner: root
+    group: root
+    mode: "0755"
+  when: nfs_storage_root is defined and nfs_storage_root | length > 0
+
+- name: Discover top-level storage directories
+  find:
+    paths: "{{ nfs_storage_root }}"
+    file_type: directory
+    depth: 1
+    hidden: false
+  register: nfs_storage_dirs
+  when: nfs_storage_root is defined and nfs_storage_root | length > 0
+
+- name: Bind-mount storage directories into NFS export root
+  mount:
+    path: "{{ nfs_export_root }}/{{ item.path | basename }}"
+    src: "{{ item.path }}"
+    fstype: none
+    opts: bind
+    state: mounted
+  loop: "{{ nfs_storage_dirs.files | default([]) }}"
+  when:
+    - nfs_storage_root is defined
+    - nfs_storage_root | length > 0
+    - item.path | basename not in nfs_export_skip_names
 
 - name: Ensure exports.d directory exists
   file:
@@ -14,15 +37,17 @@
     owner: root
     group: root
     mode: "0755"
+  when: nfs_storage_root is defined and nfs_storage_root | length > 0
 
 - name: Configure exports file
   copy:
     dest: /etc/exports.d/home.exports
-    content: |
-      {{ nfs_export_path | default('/srv/nfs') }} {{ nfs_export_clients | default('192.168.86.0/24') }}(rw,sync,no_subtree_check,no_root_squash)
+    content: "{{ lookup('template', 'exports.j2') }}"
     owner: root
     group: root
     mode: "0644"
+  when: nfs_storage_root is defined and nfs_storage_root | length > 0
 
 - name: Reload exports
   command: exportfs -ra
+  when: nfs_storage_root is defined and nfs_storage_root | length > 0

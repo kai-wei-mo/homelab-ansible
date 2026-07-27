@@ -8,3 +8,6 @@ local_storage_mounts:
     path: /mnt/seagate
     fstype: exfat
     opts: defaults,nofail,noatime,x-systemd.device-timeout=10
+
+# Auto-export top-level dirs under /mnt/seagate (see roles/nfs/tasks/README.md).
+nfs_storage_root: /mnt/seagate

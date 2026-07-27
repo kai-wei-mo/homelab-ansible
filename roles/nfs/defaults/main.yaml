@@ -1,0 +1,17 @@
+---
+# Role defaults for hosts that opt in via host_vars (see roles/nfs/tasks/README.md).
+# Do not set nfs_storage_root here — configure it per NAS host.
+
+nfs_export_root: /srv/nfs
+# Tailscale CGNAT (100.x.x.x) and/or LAN CIDRs. List of strings.
+nfs_export_clients:
+  - 100.64.0.0/10
+nfs_export_options: rw,sync,no_subtree_check,no_root_squash
+# crossmnt lets clients traverse bind-mounted datasets under the export root.
+nfs_export_container_options: rw,sync,crossmnt,no_subtree_check,no_root_squash
+
+# Skip junk / metadata dirs if they appear as normal directories on exFAT, etc.
+nfs_export_skip_names:
+  - .Spotlight-V100
+  - .fseventsd
+  - .Trashes
