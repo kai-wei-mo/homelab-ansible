@@ -43,3 +43,37 @@
         argv: "{{ tailscale_up_argv }}"
       register: tailscale_up
       changed_when: tailscale_up.rc == 0 and 'Success' in tailscale_up.stdout
+
+    - name: Expose Traefik ingress to the tailnet via Tailscale Serve
+      when:
+        - k3s_traefik_node_ports is defined
+        - k3s_traefik_node_ports.web is defined
+        - k3s_traefik_node_ports.websecure is defined
+      block:
+        - name: Enable tailscale serve for Traefik HTTP
+          ansible.builtin.command:
+            argv:
+              - tailscale
+              - serve
+              - --bg
+              - --tcp=80
+              - "127.0.0.1:{{ k3s_traefik_node_ports.web }}"
+          become: true
+          register: tailscale_serve_web
+          changed_when: >-
+            'Serve started' in tailscale_serve_web.stdout
+            or 'running in the background' in tailscale_serve_web.stdout
+
+        - name: Enable tailscale serve for Traefik HTTPS
+          ansible.builtin.command:
+            argv:
+              - tailscale
+              - serve
+              - --bg
+              - --tcp=443
+              - "127.0.0.1:{{ k3s_traefik_node_ports.websecure }}"
+          become: true
+          register: tailscale_serve_websecure
+          changed_when: >-
+            'Serve started' in tailscale_serve_websecure.stdout
+            or 'running in the background' in tailscale_serve_websecure.stdout
