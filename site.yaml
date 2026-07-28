@@ -42,8 +42,9 @@
   hosts: nas
   become: true
   roles:
-    - role: nfs
-      tags: [nfs]
+    # prefer Samba for both Windows and Mac clients
+    # - role: nfs
+    #   tags: [nfs]
     - role: nfs-samba
       tags: [samba]
 
