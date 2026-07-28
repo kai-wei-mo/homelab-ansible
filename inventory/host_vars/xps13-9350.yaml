@@ -11,3 +11,6 @@ local_storage_mounts:
 
 # Auto-export top-level dirs under /mnt/seagate (see roles/nfs/tasks/README.md).
 nfs_storage_root: /mnt/seagate
+
+# Auto-share top-level dirs under /mnt/seagate (see roles/nfs-samba/tasks/README.md).
+samba_storage_root: /mnt/seagate

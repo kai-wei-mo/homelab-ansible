@@ -1,70 +1,98 @@
 ---
-- name: Install Samba packages
-  apt:
-    name:
-      - samba
-      - samba-common-bin
-    state: present
-    update_cache: yes
-
-- name: Ensure sambashare group exists
-  group:
-    name: sambashare
-    state: present
-
-- name: Ensure samba user exists
-  user:
-    name: sambauser
-    group: sambashare
-    shell: /usr/sbin/nologin
-    create_home: no
-    system: yes
-
-- name: Set samba password
-  command: smbpasswd -a -s sambauser
-  args:
-    stdin: "password\npassword"
-  no_log: true
-
-- name: Create share directory
+- name: Create Samba export root
   file:
-    path: /srv/samba
+    path: "{{ samba_export_root }}"
     state: directory
-    owner: sambauser
-    group: sambashare
-    mode: "0775"
+    owner: root
+    group: root
+    mode: "0755"
+  when: samba_storage_root is defined and samba_storage_root | length > 0
 
-- name: Configure Samba share
+- name: Discover top-level storage directories
+  find:
+    paths: "{{ samba_storage_root }}"
+    file_type: directory
+    depth: 1
+    hidden: false
+  register: samba_storage_dirs
+  when: samba_storage_root is defined and samba_storage_root | length > 0
+
+- name: Bind-mount storage directories into Samba export root
+  mount:
+    path: "{{ samba_export_root }}/{{ item.path | basename }}"
+    src: "{{ item.path }}"
+    fstype: none
+    opts: bind
+    state: mounted
+  loop: "{{ samba_storage_dirs.files | default([]) }}"
+  when:
+    - samba_storage_root is defined
+    - samba_storage_root | length > 0
+    - item.path | basename not in samba_export_skip_names
+
+- name: Ensure smb.conf.d directory exists
+  file:
+    path: /etc/samba/smb.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: samba_storage_root is defined and samba_storage_root | length > 0
+
+- name: Remove smb.conf.d include from inside global section
+  blockinfile:
+    path: /etc/samba/smb.conf
+    marker: "# {mark} ANSIBLE SAMBA INCLUDE"
+    state: absent
+  when: samba_storage_root is defined and samba_storage_root | length > 0
+
+- name: Remove legacy Ansible-managed share from smb.conf
   blockinfile:
     path: /etc/samba/smb.conf
     marker: "# {mark} ANSIBLE MANAGED SAMBA SHARE"
-    block: |
-      [shared]
-          path = /srv/samba
-          browseable = yes
-          read only = no
-          writable = yes
-          guest ok = no
-          valid users = @sambashare
-          create mask = 0664
-          directory mask = 0775
+    state: absent
+  when: samba_storage_root is defined and samba_storage_root | length > 0
+
+- name: Remove broken conf.d glob include from smb.conf
+  lineinfile:
+    path: /etc/samba/smb.conf
+    regexp: '^include = /etc/samba/smb.conf.d/\*\.conf$'
+    state: absent
   notify: restart samba
+  when: samba_storage_root is defined and samba_storage_root | length > 0
 
-- name: Enable Samba services
-  service:
-    name: "{{ item }}"
-    enabled: yes
-    state: started
+- name: Include global Samba options from smb.conf.d
+  lineinfile:
+    path: /etc/samba/smb.conf
+    line: "   include = /etc/samba/smb.conf.d/global.conf"
+    insertafter: '^\[global\]'
+    state: present
+  notify: restart samba
+  when: samba_storage_root is defined and samba_storage_root | length > 0
+
+- name: Remove stale share definitions from smb.conf.d
+  file:
+    path: "/etc/samba/smb.conf.d/{{ item }}"
+    state: absent
   loop:
-    - smbd
-    - nmbd
+    - home.conf
+    - media.conf
+  when: samba_storage_root is defined and samba_storage_root | length > 0
 
-- name: restart samba
-  service:
-    name: "{{ item }}"
-    state: restarted
-  loop:
-    - smbd
-    - nmbd
+- name: Configure Samba global options
+  template:
+    src: global.conf.j2
+    dest: /etc/samba/smb.conf.d/global.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart samba
+  when: samba_storage_root is defined and samba_storage_root | length > 0
 
-# net use N: \\192.168.86.90\shared
+- name: Configure Samba share in smb.conf
+  blockinfile:
+    path: /etc/samba/smb.conf
+    marker: "# {mark} ANSIBLE MANAGED MEDIA SHARE"
+    block: "{{ lookup('template', 'shares.j2') }}"
+  notify: restart samba
+  when: samba_storage_root is defined and samba_storage_root | length > 0

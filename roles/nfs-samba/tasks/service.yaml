@@ -1,10 +1,16 @@
 ---
-- name: Enable smbd
+- name: Enable Samba services
   systemd:
-    name: smbd
+    name: "{{ item }}"
     enabled: true
+  loop:
+    - smbd
+    - nmbd
 
-- name: Start smbd
+- name: Start Samba services
   systemd:
-    name: smbd
-    state: restarted
+    name: "{{ item }}"
+    state: started
+  loop:
+    - smbd
+    - nmbd

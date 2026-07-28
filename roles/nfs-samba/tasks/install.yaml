@@ -1,6 +1,10 @@
 ---
-- name: Install samba package
+- name: Install Samba packages
   apt:
-    name: samba
+    name:
+      - samba
+      - samba-common-bin
+      - samba-vfs-modules
     state: present
     update_cache: true
+  when: ansible_os_family == "Debian"

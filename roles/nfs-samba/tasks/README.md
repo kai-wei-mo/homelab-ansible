@@ -1,66 +1,31 @@
-nfs://192.168.86.90/srv/nfs
+# Samba shares
 
-sudo mkdir -p /Volumes/nfs-xps-13
-sudo mount -t nfs -o resvport,nolocks 192.168.86.90:/srv/nfs /Volumes/nfs-xps-13
-ls /Volumes/nfs-xps-13
+Opt in per host in `inventory/host_vars/<hostname>.yaml`:
 
+```yaml
+samba_storage_root: /mnt/seagate
+```
 
+Hosts without `samba_storage_root` skip share configuration.
 
-----
+## Layout
 
+```
+/mnt/seagate/          ← physical disk (server admin only)
+├── jellyfin/
+└── audiobookshelf/
 
-Method 1 — Group Policy (Pro / Enterprise)
+/srv/samba/            ← stable Samba namespace (what clients mount)
+├── jellyfin/          → bind mount
+└── audiobookshelf/    → bind mount
+```
 
-Press Win + R
+Top-level directories under `samba_storage_root` are discovered and bind-mounted
+into `samba_export_root`. Re-run the samba role after adding a new top-level folder.
 
-Run:
+## Multiple disks (future)
 
-gpedit.msc
-
-Navigate:
-
-Computer Configuration
-  → Administrative Templates
-    → Network
-      → Lanman Workstation
-
-Open:
-
-Enable insecure guest logons
-
-Set to:
-
-Enabled
-
-Click Apply → OK
-
-Restart your computer.
-
-Method 2 — Registry (works on all editions, including Home)
-
-Open PowerShell as Administrator:
-
-reg add HKLM\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters `
- /v AllowInsecureGuestAuth /t REG_DWORD /d 1 /f
-
-Restart:
-
-Restart-Computer
-Then mount the share
-net use N: \\192.168.86.90\storage
-
-or
-
-net use N: \\192.168.86.90\samba-storage
-
-(no username/password needed if guest ok = yes)
-
-Verify
-N:
-dir
-
-If it still fails, run:
-
-net view \\192.168.86.90
-
-to confirm Windows sees the share.
+This role currently supports one storage root. To present several physical
+disks as a single path, use a **union filesystem** such as
+[MergerFS](https://github.com/trapexit/mergerfs) to merge mount points into one
+directory, then point `samba_storage_root` at that merged path.

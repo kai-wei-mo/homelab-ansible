@@ -1,0 +1,8 @@
+[{{ samba_share_name }}]
+    path = {{ samba_export_root }}
+    browseable = yes
+    read only = {{ 'yes' if samba_read_only else 'no' }}
+    guest ok = {{ 'yes' if samba_guest_ok else 'no' }}
+    force user = root
+    create mask = 0664
+    directory mask = 0775

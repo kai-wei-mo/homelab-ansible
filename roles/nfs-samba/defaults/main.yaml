@@ -1,0 +1,15 @@
+---
+# Role defaults for hosts that opt in via host_vars (see roles/nfs-samba/tasks/README.md).
+# Do not set samba_storage_root here — configure it per NAS host.
+
+samba_export_root: /srv/samba
+samba_share_name: media
+
+samba_guest_ok: true
+samba_read_only: false
+
+# Skip junk / metadata dirs if they appear as normal directories on exFAT, etc.
+samba_export_skip_names:
+  - .Spotlight-V100
+  - .fseventsd
+  - .Trashes
