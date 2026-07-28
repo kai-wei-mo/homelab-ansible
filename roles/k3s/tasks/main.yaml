@@ -18,6 +18,52 @@
   delay: 6
   until: k3s_nodes.rc == 0
 
+- name: Configure Traefik (pinned NodePorts and optional external IPs)
+  block:
+    - name: Deploy Traefik HelmChartConfig
+      ansible.builtin.template:
+        src: traefik-helmchartconfig.yaml.j2
+        dest: /var/lib/rancher/k3s/server/manifests/traefik-tailscale.yaml
+        owner: root
+        group: root
+        mode: "0644"
+      become: true
+      register: traefik_helmchartconfig
+
+    - name: Wait for Traefik HelmChartConfig to be applied
+      when: traefik_helmchartconfig is changed
+      ansible.builtin.command:
+        cmd: k3s kubectl get svc traefik -n kube-system -o json
+      register: traefik_svc
+      until: >-
+        {{
+          (
+            k3s_traefik_external_ips | length == 0
+            or (
+              k3s_traefik_external_ips
+              | difference((traefik_svc.stdout | from_json).spec.externalIPs | default([]))
+              | length == 0
+            )
+          )
+          and (
+            (traefik_svc.stdout | from_json).spec.ports
+            | selectattr('name', 'equalto', 'web')
+            | map(attribute='nodePort')
+            | first
+            | string
+          ) == (k3s_traefik_node_ports.web | string)
+          and (
+            (traefik_svc.stdout | from_json).spec.ports
+            | selectattr('name', 'equalto', 'websecure')
+            | map(attribute='nodePort')
+            | first
+            | string
+          ) == (k3s_traefik_node_ports.websecure | string)
+        }}
+      retries: 24
+      delay: 10
+      changed_when: false
+
 - set_fact:
     k3s_config_dir: "{{ ansible_facts['env']['HOME'] }}/.kube"
 

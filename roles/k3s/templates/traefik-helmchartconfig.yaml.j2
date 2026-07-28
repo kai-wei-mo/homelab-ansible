@@ -1,0 +1,20 @@
+---
+# k3s applies HelmChartConfig from /var/lib/rancher/k3s/server/manifests/ on startup
+# and when the file changes. Merges into the bundled Traefik chart.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        nodePort: {{ k3s_traefik_node_ports.web }}
+      websecure:
+        nodePort: {{ k3s_traefik_node_ports.websecure }}
+    service:
+      externalIPs:
+{% for ip in k3s_traefik_external_ips %}
+        - {{ ip }}
+{% endfor %}
