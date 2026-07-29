@@ -6,6 +6,14 @@ tailscale_advertise_routes:
 k3s_traefik_external_ips:
   - "100.112.46.91"
 
+k3s_node_labels:
+  - chaewon.disk=seagate
+  - chaewon.hardware=xps13-9350
+  - chaewon.os-version=24.04
+
+# Boot console-only and blank the laptop panel (see roles/common display-power).
+display_power_off: true
+
 # External Seagate drive (exFAT), mounted by the local-storage role.
 local_storage_mounts:
   - device: LABEL=Seagate

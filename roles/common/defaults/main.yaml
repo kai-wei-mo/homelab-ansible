@@ -1,0 +1,3 @@
+---
+# When true, boot to multi-user (no GUI) and blank/power down the panel.
+display_power_off: false

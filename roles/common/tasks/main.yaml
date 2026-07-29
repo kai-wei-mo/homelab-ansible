@@ -3,3 +3,5 @@
 
 - include_tasks: architecture.yaml
 - include_tasks: system-updates.yaml
+- include_tasks: display-power.yaml
+  when: display_power_off | bool

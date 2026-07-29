@@ -1,0 +1,28 @@
+---
+# Blank the console panel and keep GUI off (host-gated via display_power_off).
+
+- name: Read current systemd default target
+  ansible.builtin.command: systemctl get-default
+  register: display_power_current_default
+  changed_when: false
+  check_mode: false
+
+- name: Set default target to multi-user (no GUI)
+  ansible.builtin.command: systemctl set-default multi-user.target
+  when: display_power_current_default.stdout != "multi-user.target"
+
+- name: Install display-power-off systemd unit
+  ansible.builtin.template:
+    src: display-power-off.service.j2
+    dest: /etc/systemd/system/display-power-off.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: display_power_unit
+
+- name: Enable and start display-power-off
+  ansible.builtin.systemd:
+    name: display-power-off.service
+    enabled: true
+    state: started
+    daemon_reload: true

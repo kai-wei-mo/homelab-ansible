@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Blank console and power down laptop display
+After=getty@tty1.service
+Wants=getty@tty1.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Blank/power down the VT; zero every backlight (Intel panel on XPS 13).
+ExecStart=/bin/sh -c 'setterm --blank force --powerdown 1 </dev/tty1 >/dev/tty1 2>/dev/null || true; for b in /sys/class/backlight/*/brightness; do [ -w "$b" ] && echo 0 > "$b" || true; done'
+
+[Install]
+WantedBy=multi-user.target

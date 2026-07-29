@@ -1,1 +1,4 @@
 ---
+k3s_node_labels:
+  - chaewon.hardware=mac-mini-i5
+  - chaewon.os-version=24.04

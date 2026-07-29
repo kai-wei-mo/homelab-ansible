@@ -3,8 +3,8 @@ all:
   hosts:
     xps13-9350:
       ansible_host: 192.168.86.90
-    # mac-mini-i5:
-    #   ansible_host: 192.168.86.91
+    mac-mini-i5:
+      ansible_host: 192.168.86.91
     # thinkcentre-m93p:
     #   ansible_host: 192.168.86.92
 
