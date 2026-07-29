@@ -1,0 +1,17 @@
+# Ansible managed — {{ ansible_managed }}
+[Unit]
+Description=WireGuard fail-closed killswitch (reject non-VPN internet egress)
+Documentation=file:///etc/wireguard/killswitch.sh
+After=network-online.target wg-quick@{{ wireguard_interface }}.service
+Wants=network-online.target wg-quick@{{ wireguard_interface }}.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/wireguard/killswitch.sh start
+ExecReload=/etc/wireguard/killswitch.sh reload
+# Do NOT clear rules on unit stop/restart — stay fail-closed across wg-quick
+# flaps. To intentionally disable: /etc/wireguard/killswitch.sh stop
+
+[Install]
+WantedBy=multi-user.target

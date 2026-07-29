@@ -1,0 +1,214 @@
+#!/bin/bash
+# Ansible managed — {{ ansible_managed }}
+# Fail-closed egress: only WireGuard (plus explicit local/tailnet exceptions)
+# may leave this host for the public internet.
+set -euo pipefail
+
+IFACE="{{ wireguard_interface }}"
+CHAIN_OUT="WG-KILLSWITCH"
+CHAIN_FWD="WG-KILLSWITCH-FWD"
+CHAIN_OUT6="WG-KILLSWITCH6"
+CHAIN_FWD6="WG-KILLSWITCH-FWD6"
+
+ALLOWED_OIF=(
+{% for iface in wireguard_killswitch_allowed_interfaces %}
+  "{{ iface }}"
+{% endfor %}
+  "${IFACE}"
+)
+
+ALLOWED_DST4=(
+{% for cidr in wireguard_killswitch_allowed_cidrs_v4 %}
+  "{{ cidr }}"
+{% endfor %}
+)
+
+ALLOWED_DST6=(
+{% for cidr in wireguard_killswitch_allowed_cidrs_v6 %}
+  "{{ cidr }}"
+{% endfor %}
+)
+
+ENDPOINT_HOST="{{ wireguard_peer_endpoint.split(':')[0] }}"
+
+have_chain() {
+  local ipt="$1" chain="$2"
+  "${ipt}" -nL "${chain}" >/dev/null 2>&1
+}
+
+ensure_jump() {
+  local ipt="$1" parent="$2" chain="$3"
+  if ! "${ipt}" -C "${parent}" -j "${chain}" >/dev/null 2>&1; then
+    "${ipt}" -I "${parent}" 1 -j "${chain}"
+  fi
+}
+
+remove_jump() {
+  local ipt="$1" parent="$2" chain="$3"
+  while "${ipt}" -C "${parent}" -j "${chain}" >/dev/null 2>&1; do
+    "${ipt}" -D "${parent}" -j "${chain}"
+  done
+}
+
+flush_chain() {
+  local ipt="$1" chain="$2"
+  if have_chain "${ipt}" "${chain}"; then
+    "${ipt}" -F "${chain}"
+  else
+    "${ipt}" -N "${chain}"
+  fi
+}
+
+delete_chain() {
+  local ipt="$1" chain="$2"
+  if have_chain "${ipt}" "${chain}"; then
+    "${ipt}" -F "${chain}"
+    "${ipt}" -X "${chain}"
+  fi
+}
+
+build_out4() {
+  flush_chain iptables "${CHAIN_OUT}"
+
+  # Established/related always ok (return traffic, DHCP renewals mid-flow, etc.).
+  iptables -A "${CHAIN_OUT}" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+
+  local iface
+  for iface in "${ALLOWED_OIF[@]}"; do
+    iptables -A "${CHAIN_OUT}" -o "${iface}" -j RETURN
+  done
+
+  local cidr
+  for cidr in "${ALLOWED_DST4[@]}"; do
+    iptables -A "${CHAIN_OUT}" -d "${cidr}" -j RETURN
+  done
+
+  # Encrypted WireGuard packets to the peer (fwmark set by wg-quick), and
+  # Tailscale packets which share the same historical mark value.
+  local mark
+  mark="$(wg show "${IFACE}" fwmark 2>/dev/null || true)"
+  if [[ -n "${mark}" && "${mark}" != "off" ]]; then
+    iptables -A "${CHAIN_OUT}" -m mark --mark "${mark}" -j RETURN
+  fi
+
+  # Bootstrap / reconnect path even if fwmark is temporarily unavailable.
+  if [[ -n "${ENDPOINT_HOST}" ]]; then
+    iptables -A "${CHAIN_OUT}" -d "${ENDPOINT_HOST}" -p udp -j RETURN
+  fi
+
+  iptables -A "${CHAIN_OUT}" -j REJECT --reject-with icmp-admin-prohibited
+  ensure_jump iptables OUTPUT "${CHAIN_OUT}"
+}
+
+build_fwd4() {
+  flush_chain iptables "${CHAIN_FWD}"
+
+  iptables -A "${CHAIN_FWD}" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+
+  local iface
+  for iface in "${ALLOWED_OIF[@]}"; do
+    iptables -A "${CHAIN_FWD}" -o "${iface}" -j RETURN
+    iptables -A "${CHAIN_FWD}" -i "${iface}" -j RETURN
+  done
+
+  local cidr
+  for cidr in "${ALLOWED_DST4[@]}"; do
+    iptables -A "${CHAIN_FWD}" -d "${cidr}" -j RETURN
+    iptables -A "${CHAIN_FWD}" -s "${cidr}" -j RETURN
+  done
+
+  # Anything forwarded toward the public internet must leave via wg0 (above).
+  iptables -A "${CHAIN_FWD}" -j REJECT --reject-with icmp-admin-prohibited
+  ensure_jump iptables FORWARD "${CHAIN_FWD}"
+}
+
+build_out6() {
+  flush_chain ip6tables "${CHAIN_OUT6}"
+
+  ip6tables -A "${CHAIN_OUT6}" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+
+  local iface
+  for iface in "${ALLOWED_OIF[@]}"; do
+    ip6tables -A "${CHAIN_OUT6}" -o "${iface}" -j RETURN
+  done
+
+  local cidr
+  for cidr in "${ALLOWED_DST6[@]}"; do
+    ip6tables -A "${CHAIN_OUT6}" -d "${cidr}" -j RETURN
+  done
+
+  local mark
+  mark="$(wg show "${IFACE}" fwmark 2>/dev/null || true)"
+  if [[ -n "${mark}" && "${mark}" != "off" ]]; then
+    ip6tables -A "${CHAIN_OUT6}" -m mark --mark "${mark}" -j RETURN
+  fi
+
+  ip6tables -A "${CHAIN_OUT6}" -j REJECT --reject-with icmp6-adm-prohibited
+  ensure_jump ip6tables OUTPUT "${CHAIN_OUT6}"
+}
+
+build_fwd6() {
+  flush_chain ip6tables "${CHAIN_FWD6}"
+
+  ip6tables -A "${CHAIN_FWD6}" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+
+  local iface
+  for iface in "${ALLOWED_OIF[@]}"; do
+    ip6tables -A "${CHAIN_FWD6}" -o "${iface}" -j RETURN
+    ip6tables -A "${CHAIN_FWD6}" -i "${iface}" -j RETURN
+  done
+
+  local cidr
+  for cidr in "${ALLOWED_DST6[@]}"; do
+    ip6tables -A "${CHAIN_FWD6}" -d "${cidr}" -j RETURN
+    ip6tables -A "${CHAIN_FWD6}" -s "${cidr}" -j RETURN
+  done
+
+  ip6tables -A "${CHAIN_FWD6}" -j REJECT --reject-with icmp6-adm-prohibited
+  ensure_jump ip6tables FORWARD "${CHAIN_FWD6}"
+}
+
+start() {
+  build_out4
+  build_fwd4
+  build_out6
+  build_fwd6
+}
+
+stop() {
+  # Intentionally does NOT open the internet — only tears down our jumps/chains
+  # when the killswitch unit itself is disabled/stopped by an admin.
+  remove_jump iptables OUTPUT "${CHAIN_OUT}"
+  remove_jump iptables FORWARD "${CHAIN_FWD}"
+  remove_jump ip6tables OUTPUT "${CHAIN_OUT6}"
+  remove_jump ip6tables FORWARD "${CHAIN_FWD6}"
+  delete_chain iptables "${CHAIN_OUT}"
+  delete_chain iptables "${CHAIN_FWD}"
+  delete_chain ip6tables "${CHAIN_OUT6}"
+  delete_chain ip6tables "${CHAIN_FWD6}"
+}
+
+reload() {
+  start
+}
+
+status() {
+  echo "=== ${CHAIN_OUT} ==="
+  iptables -nL "${CHAIN_OUT}" 2>/dev/null || echo "(absent)"
+  echo "=== ${CHAIN_FWD} ==="
+  iptables -nL "${CHAIN_FWD}" 2>/dev/null || echo "(absent)"
+  echo "=== ${CHAIN_OUT6} ==="
+  ip6tables -nL "${CHAIN_OUT6}" 2>/dev/null || echo "(absent)"
+  echo "=== ${CHAIN_FWD6} ==="
+  ip6tables -nL "${CHAIN_FWD6}" 2>/dev/null || echo "(absent)"
+}
+
+case "${1:-}" in
+  start|reload) start ;;
+  stop) stop ;;
+  status) status ;;
+  *)
+    echo "Usage: $0 {start|stop|reload|status}" >&2
+    exit 1
+    ;;
+esac

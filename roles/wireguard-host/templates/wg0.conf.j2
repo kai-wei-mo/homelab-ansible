@@ -5,6 +5,10 @@ Address = {{ wireguard_address }}
 {% if wireguard_dns | length > 0 %}
 DNS = {{ wireguard_dns }}
 {% endif %}
+{% if wireguard_killswitch_enabled | bool %}
+# Re-apply killswitch after wg-quick so fwmark/endpoint allows stay correct.
+PostUp = /etc/wireguard/killswitch.sh reload
+{% endif %}
 {% for line in wireguard_extra_interface_lines %}
 {{ line }}
 {% endfor %}

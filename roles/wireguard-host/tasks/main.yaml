@@ -18,8 +18,31 @@
         name:
           - wireguard
           - wireguard-tools
+          - curl
         state: present
         update_cache: "{{ wireguard_host_apt_update_cache | bool }}"
+
+    - name: Deploy WireGuard killswitch script
+      when: wireguard_killswitch_enabled | bool
+      ansible.builtin.template:
+        src: killswitch.sh.j2
+        dest: /etc/wireguard/killswitch.sh
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Reload WireGuard killswitch
+
+    - name: Deploy WireGuard killswitch systemd unit
+      when: wireguard_killswitch_enabled | bool
+      ansible.builtin.template:
+        src: wireguard-killswitch.service.j2
+        dest: /etc/systemd/system/wireguard-killswitch.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload systemd
+        - Reload WireGuard killswitch
 
     - name: Deploy WireGuard config
       ansible.builtin.template:
@@ -36,3 +59,102 @@
         enabled: true
         state: started
         daemon_reload: true
+
+    - name: Enable and start WireGuard killswitch
+      when: wireguard_killswitch_enabled | bool
+      ansible.builtin.systemd:
+        name: wireguard-killswitch
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Flush handlers so killswitch/WG are live before verify
+      ansible.builtin.meta: flush_handlers
+
+    - name: Verify public traffic is forced through WireGuard
+      when: wireguard_verify_egress | bool
+      block:
+        - name: Resolve IPv4 path for public target
+          ansible.builtin.command:
+            argv:
+              - ip
+              - -4
+              - route
+              - get
+              - "{{ wireguard_verify_ipv4_target }}"
+          register: wireguard_route_v4
+          changed_when: false
+
+        - name: Assert IPv4 public route uses WireGuard
+          ansible.builtin.assert:
+            that:
+              - "('dev ' + wireguard_interface) in wireguard_route_v4.stdout"
+            fail_msg: >-
+              IPv4 to {{ wireguard_verify_ipv4_target }} is NOT via {{ wireguard_interface }}:
+              {{ wireguard_route_v4.stdout | trim }}
+
+        - name: Resolve IPv6 path for public target
+          ansible.builtin.command:
+            argv:
+              - ip
+              - -6
+              - route
+              - get
+              - "{{ wireguard_verify_ipv6_target }}"
+          register: wireguard_route_v6
+          changed_when: false
+          failed_when: false
+
+        - name: Assert IPv6 public route uses WireGuard
+          when: wireguard_route_v6.rc == 0
+          ansible.builtin.assert:
+            that:
+              - "('dev ' + wireguard_interface) in wireguard_route_v6.stdout"
+            fail_msg: >-
+              IPv6 to {{ wireguard_verify_ipv6_target }} is NOT via {{ wireguard_interface }}:
+              {{ wireguard_route_v6.stdout | trim }}
+
+        - name: Detect physical uplink for leak probe
+          when: wireguard_killswitch_enabled | bool
+          ansible.builtin.shell: |
+            set -euo pipefail
+            if [ -n "{{ wireguard_verify_physical_interface }}" ]; then
+              echo "{{ wireguard_verify_physical_interface }}"
+              exit 0
+            fi
+            # Default route in main is the real NIC; WG default lives in table 51820.
+            ip -4 route show default | awk '/default/ {print $5; exit}'
+          args:
+            executable: /bin/bash
+          register: wireguard_phys_if
+          changed_when: false
+
+        - name: Probe that physical NIC cannot reach the public internet
+          when:
+            - wireguard_killswitch_enabled | bool
+            - wireguard_phys_if.stdout | length > 0
+          ansible.builtin.command:
+            argv:
+              - curl
+              - -4
+              - -sS
+              - --max-time
+              - "5"
+              - --interface
+              - "{{ wireguard_phys_if.stdout | trim }}"
+              - https://ifconfig.me
+          register: wireguard_phys_leak
+          changed_when: false
+          failed_when: false
+
+        - name: Assert killswitch blocks non-WireGuard public egress
+          when:
+            - wireguard_killswitch_enabled | bool
+            - wireguard_phys_if.stdout | length > 0
+          ansible.builtin.assert:
+            that:
+              - wireguard_phys_leak.rc != 0
+            fail_msg: >-
+              Killswitch FAILED: bind to {{ wireguard_phys_if.stdout | trim }} still
+              reached the internet ({{ wireguard_phys_leak.stdout | trim }}).
+              Public traffic must only succeed via {{ wireguard_interface }}.

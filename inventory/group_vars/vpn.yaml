@@ -14,3 +14,14 @@ wireguard_address: "{{ vault_wireguard_address }}"
 wireguard_dns: "{{ vault_wireguard_dns }}"
 wireguard_peer_public_key: "{{ vault_wireguard_peer_public_key }}"
 wireguard_peer_endpoint: "{{ vault_wireguard_peer_endpoint }}"
+
+# Fail closed: reject internet egress that is not via wg0 (see role README).
+wireguard_killswitch_enabled: true
+wireguard_verify_egress: true
+wireguard_killswitch_allowed_cidrs_v4:
+  - "192.168.86.0/24" # LAN
+  - "10.42.0.0/16"    # k3s pods
+  - "10.43.0.0/16"    # k3s services
+  - "172.17.0.0/16"   # docker bridge
+  - "100.64.0.0/10"   # Tailscale
+  - "127.0.0.0/8"

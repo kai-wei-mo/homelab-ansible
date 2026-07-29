@@ -22,3 +22,39 @@ wireguard_extra_interface_lines: []
 # Full-tunnel VPN often breaks apt against us.archive.ubuntu.com (InRelease NOSPLIT / “no longer signed”).
 # Keep false; run `wg-quick down wg0` (or -e wireguard_host_apt_update_cache=true on LAN) when you need apt update.
 wireguard_host_apt_update_cache: false
+
+# --- Killswitch (fail closed) ---
+# Reject host/pod internet egress that is not via WireGuard. Local LAN, k8s
+# CNI, Tailscale, and the WireGuard endpoint itself remain reachable.
+wireguard_killswitch_enabled: true
+
+# Interfaces allowed as egress (plus wireguard_interface, added in the script).
+wireguard_killswitch_allowed_interfaces:
+  - lo
+  - tailscale0
+  - cni0
+  - flannel.1
+  - docker0
+
+# Destinations always allowed even on the physical NIC (LAN / cluster / tailnet).
+wireguard_killswitch_allowed_cidrs_v4:
+  - "192.168.0.0/16"
+  - "10.42.0.0/16"   # k3s pods
+  - "10.43.0.0/16"   # k3s services
+  - "172.17.0.0/16"  # docker bridge
+  - "100.64.0.0/10"  # Tailscale CGNAT
+  - "127.0.0.0/8"
+
+wireguard_killswitch_allowed_cidrs_v6:
+  - "::1/128"
+  - "fe80::/10"
+  - "fc00::/7"       # ULA (includes Tailscale fd7a::/16)
+  - "ff00::/8"       # multicast (ND, etc.)
+
+# Ansible asserts that default public routing is via the WG interface.
+wireguard_verify_egress: true
+wireguard_verify_ipv4_target: "1.1.1.1"
+wireguard_verify_ipv6_target: "2606:4700:4700::1111"
+# Optional: also require a forced bind to this physical NIC to FAIL (proves killswitch).
+# Empty = auto-detect the interface owning the default non-WG route in main.
+wireguard_verify_physical_interface: ""

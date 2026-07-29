@@ -3,3 +3,14 @@
   ansible.builtin.systemd:
     name: "wg-quick@{{ wireguard_interface }}"
     state: restarted
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Reload WireGuard killswitch
+  when: wireguard_killswitch_enabled | bool
+  ansible.builtin.command:
+    argv:
+      - /etc/wireguard/killswitch.sh
+      - reload
