@@ -3,3 +3,12 @@
 # Set to the k3s node's Tailscale IP so *.home.chaewon.io (wildcard DNS → 100.x)
 # reaches ingress without depending on a fixed LAN address.
 k3s_traefik_external_ips: []
+
+# Extra apiserver certificate SANs. The role always adds inventory_hostname,
+# k3s_traefik_external_ips, and the node's Tailscale IPs / MagicDNS name.
+k3s_tls_sans: []
+
+k3s_apiserver_port: 6443
+# Tailnet port Tailscale Serve uses for the apiserver (host-side k3s stays on
+# k3s_apiserver_port). Keep these different so Serve does not steal :6443.
+k3s_apiserver_serve_port: 16443

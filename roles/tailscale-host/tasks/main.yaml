@@ -44,6 +44,33 @@
       register: tailscale_up
       changed_when: tailscale_up.rc == 0 and 'Success' in tailscale_up.stdout
 
+    - name: Expose k3s apiserver to tailnet via Tailscale Serve
+      when: "'k3s' in group_names"
+      block:
+        - name: Assert apiserver Serve port does not collide with k3s
+          ansible.builtin.assert:
+            that:
+              - (k3s_apiserver_serve_port | default(16443) | int)
+                != (k3s_apiserver_port | default(6443) | int)
+            fail_msg: >-
+              k3s_apiserver_serve_port must differ from k3s_apiserver_port.
+              Serving TCP {{ k3s_apiserver_port | default(6443) }} steals the
+              bind k3s needs, and k3s will fail to restart.
+
+        - name: Enable tailscale serve for k3s apiserver
+          ansible.builtin.command:
+            argv:
+              - tailscale
+              - serve
+              - --bg
+              - --tcp={{ k3s_apiserver_serve_port | default(16443) }}
+              - "127.0.0.1:{{ k3s_apiserver_port | default(6443) }}"
+          become: true
+          register: tailscale_serve_apiserver
+          changed_when: >-
+            'Serve started' in tailscale_serve_apiserver.stdout
+            or 'running in the background' in tailscale_serve_apiserver.stdout
+
     - name: Expose Traefik ingress to the tailnet via Tailscale Serve
       when:
         - k3s_traefik_node_ports is defined

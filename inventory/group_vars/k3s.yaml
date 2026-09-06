@@ -9,3 +9,9 @@ argocd_repo_github_pat: "{{ vault_argocd_repo_github_pat }}"
 k3s_traefik_node_ports:
   web: 30080
   websecure: 30443
+
+# Tailscale Serve forwards this tailnet port to the apiserver on localhost.
+# Must not be 6443: k3s already binds *:6443, and Serving that port makes
+# k3s fail to restart (bind: address already in use).
+k3s_apiserver_port: 6443
+k3s_apiserver_serve_port: 16443

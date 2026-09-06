@@ -58,6 +58,28 @@ With `tailscale_ssh: true` (the default here), you can also use
 [Tailscale SSH](https://tailscale.com/kb/1193/tailscale-ssh) without managing
 host keys on every client.
 
+## k3s apiserver
+
+On hosts in the `k3s` group, this role Serves `:16443` to `127.0.0.1:6443`
+(not `:6443` — k3s already binds that, and Serving it makes k3s fail to
+restart). Same idea as Traefik on `:80`/`:443`.
+
+The k3s role puts the node's Tailscale IPs and MagicDNS name on the apiserver
+certificate (`tls-san`). Point your local kubeconfig at the Tailscale address
+and Serve port:
+
+```bash
+# after: ansible-playbook site.yaml --limit xps13-9350 --tags tailscale,k3s
+kubectl config set-cluster default --server=https://100.112.46.91:16443
+# or:  --server=https://xps13-9350.tailXXXX.ts.net:16443
+kubectl get nodes
+```
+
+Subnet routes (`tailscale_advertise_routes`) are a different path: they make
+the LAN IP reachable from *off* the LAN. Approve them in the admin console and
+enable **Accept routes** on the client. They do not help while you are on the
+same `192.168.86.0/24` as the node.
+
 ## Verify on the server
 
 ```bash
