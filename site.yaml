@@ -56,3 +56,10 @@
       tags: [cloudflared, networking]
     - role: wireguard-host
       tags: [wireguard, networking]
+
+- name: Pterodactyl Wings hosts
+  hosts: wings
+  become: true
+  roles:
+    - role: pterodactyl-wings
+      tags: [wings, pterodactyl]

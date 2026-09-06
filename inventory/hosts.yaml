@@ -23,3 +23,8 @@ all:
     vpn:
       hosts:
         xps13-9350:
+
+    # Runs Pterodactyl Wings (game server Docker containers).
+    wings:
+      hosts:
+        mac-mini-i5:

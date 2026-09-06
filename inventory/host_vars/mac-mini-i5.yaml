@@ -2,3 +2,7 @@
 k3s_node_labels:
   - chaewon.hardware=mac-mini-i5
   - chaewon.os-version=24.04
+
+# Game servers (Pterodactyl Wings). DHCP reservation should keep 192.168.86.91
+# stable for router port forwards and the k3s EndpointSlice.
+pterodactyl_wings_version: v1.13.3
