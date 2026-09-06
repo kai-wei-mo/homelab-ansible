@@ -1,0 +1,6 @@
+---
+pterodactyl_wings_version: v1.13.3
+pterodactyl_config_dir: /etc/pterodactyl
+pterodactyl_data_dir: /var/lib/pterodactyl
+pterodactyl_log_dir: /var/log/pterodactyl
+pterodactyl_wings_bin: /usr/local/bin/wings
