@@ -20,5 +20,6 @@
       - software-properties-common
       - gnupg
       - python3-pip
+      - unzip
     state: present
   become: true

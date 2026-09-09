@@ -1,15 +1,27 @@
 ---
 # Docker Installation
-- name: Add Docker GPG key
-  apt_key:
+- name: Ensure apt keyring directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Install Docker repository key
+  get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0644"
   become: true
 
 - name: Add Docker repository
   apt_repository:
     repo: >-
-      deb [arch={{ normalized_arch }}]
+      deb [arch={{ normalized_arch }} signed-by=/etc/apt/keyrings/docker.asc]
       https://download.docker.com/linux/ubuntu
       {{ ansible_facts['distribution_release'] }} stable
     state: present

@@ -15,6 +15,8 @@
       tags: [cloud-tools]
     - role: docker-tools
       tags: [docker]
+    - role: nvidia-container-toolkit
+      tags: [nvidia, gpu, docker]
     - role: kubernetes-tools
       tags: [kube-tools]
     - role: tailscale-host

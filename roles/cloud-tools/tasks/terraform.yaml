@@ -16,16 +16,28 @@
     terraform_installed_version: "{{ terraform_installed.stdout | from_json | json_query('terraform_version') }}"
   when: terraform_installed.rc == 0
 
-- name: Add HashiCorp GPG key
-  apt_key:
+- name: Ensure apt keyring directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Install HashiCorp repository key
+  get_url:
     url: https://apt.releases.hashicorp.com/gpg
-    state: present
+    dest: /etc/apt/keyrings/hashicorp.asc
+    owner: root
+    group: root
+    mode: "0644"
   become: true
 
 - name: Add HashiCorp repository
   apt_repository:
     repo: >-
-      deb [arch={{ normalized_arch }}]
+      deb [arch={{ normalized_arch }} signed-by=/etc/apt/keyrings/hashicorp.asc]
       https://apt.releases.hashicorp.com
       {{ ansible_facts['distribution_release'] }} main
     filename: hashicorp

@@ -1,0 +1,27 @@
+---
+# Keep WSL on the tailnet, but do not use it as an exit node.
+tailscale_advertise_exit_node: false
+
+# The Windows NVIDIA driver exposes CUDA to WSL; this enables GPU containers.
+nvidia_container_toolkit_enabled: true
+
+# Future k3s GPU worker configuration. The current k3s role installs servers
+# only; it needs k3s-agent support before this host can join the cluster.
+# GPU scheduling under WSL also needs a /dev/dxg-compatible device plugin.
+#
+# k3s_node_labels:
+#   - chaewon.hardware=kwm-pc
+#   - chaewon.os-version=24.04-wsl2
+#   - chaewon.gpu=true
+#   - chaewon.gpu-vendor=nvidia
+#   - chaewon.gpu-count=1
+#   - chaewon.gpu-arch=ampere
+#   - chaewon.gpu-compute-capability=8.6
+#   - chaewon.cuda-major=12
+#   - chaewon.tensor-cores=gen3
+#   - chaewon.gpu-precisions=fp32-tf32-fp16-bf16-int8
+#   - chaewon.nvlink=false
+#   - chaewon.container-runtime=nvidia
+#   - chaewon.workload=gpu-training
+# To remove only the WSL guest from the tailnet:
+# tailscale_host_enabled: false

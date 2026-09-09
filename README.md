@@ -57,9 +57,7 @@ sudo apt update && sudo apt install openssh-server -y
 sudo systemctl enable ssh
 sudo systemctl start ssh
 
-sudo systemctl set-default multi-user.target  # boot to console, no GUI
-# sudo systemctl start graphical.target  # one time gui start
-# sudo systemctl set-default graphical.target  # set gui as default
+sudo systemctl set-default multi-user.target  # no GUI
 
 sudo visudo
 # add line at bottom:
