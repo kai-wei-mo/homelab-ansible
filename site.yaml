@@ -31,14 +31,21 @@
     - role: local-storage
       tags: [local-storage, storage]
 
-- name: Kubernetes hosts
-  hosts: k3s
+- name: Kubernetes servers
+  hosts: k3s_servers
   become: true
   roles:
     - role: k3s
       tags: [k3s]
     - role: argocd
       tags: [argocd]
+
+- name: Kubernetes agents
+  hosts: k3s_agents
+  become: true
+  roles:
+    - role: k3s
+      tags: [k3s]
 
 - name: NAS hosts
   hosts: nas

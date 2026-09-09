@@ -2,6 +2,13 @@
 k3s_node_labels:
   - chaewon.hardware=mac-mini-i5
   - chaewon.os-version=24.04
+  - chaewon.workload=games
+
+# Leave RAM for Pterodactyl Wings / Docker game servers. kubelet subtracts
+# this from allocatable so k8s will not pack the node full.
+k3s_kubelet_args:
+  - system-reserved=cpu=500m,memory=3Gi
+  - kube-reserved=cpu=200m,memory=256Mi
 
 # Game servers (Pterodactyl Wings). DHCP reservation should keep 192.168.86.91
 # stable for router port forwards and the k3s EndpointSlice.

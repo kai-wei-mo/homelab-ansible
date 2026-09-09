@@ -15,7 +15,7 @@ inventory/
     all/
       main.yaml                 # vars for every host (ssh user, tailscale on, ...)
       vault.yaml                # secrets, ansible-vault ENCRYPTED (safe to commit)
-    k3s.yaml                    # vars for the `k3s` group (argocd)
+    k3s.yaml                    # vars for k3s_servers + k3s_agents (argocd on servers)
     vpn.yaml                    # vars for the `vpn` group (cloudflared, wireguard)
   host_vars/
     xps13-9350.yaml             # per-host overrides
@@ -33,6 +33,7 @@ never in role defaults.
 ansible-playbook site.yaml                          # everything, all hosts
 ansible-playbook site.yaml --limit xps13-9350       # one host
 ansible-playbook site.yaml --tags tailscale         # one thing
+ansible-playbook site.yaml --limit mac-mini-i5 --tags k3s  # join a worker
 ansible-playbook site.yaml --check --diff           # dry run
 ansible all -m ping                                 # connectivity test
 ```
@@ -73,8 +74,8 @@ ssh-copy-id -i ~/.ssh/ansible_key ansible@<server-ip>
 ```
 
 Then add the host to `inventory/hosts.yaml` (under `all.hosts` plus whichever
-groups it serves in: `k3s`, `nas`, `vpn`), optionally create
-`inventory/host_vars/<hostname>.yaml`, and run:
+groups it serves in: `k3s_servers` / `k3s_agents`, `nas`, `vpn`, `wings`),
+optionally create `inventory/host_vars/<hostname>.yaml`, and run:
 
 ```bash
 ansible-playbook site.yaml --limit <hostname>

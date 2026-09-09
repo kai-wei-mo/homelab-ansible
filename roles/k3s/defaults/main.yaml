@@ -12,3 +12,28 @@ k3s_apiserver_port: 6443
 # Tailnet port Tailscale Serve uses for the apiserver (host-side k3s stays on
 # k3s_apiserver_port). Keep these different so Serve does not steal :6443.
 k3s_apiserver_serve_port: 16443
+
+# "server" (control plane) or "agent" (worker). Tasks derive this from
+# membership in k3s_servers / k3s_agents; leave empty here.
+k3s_role: ""
+
+# Labels applied to this node via /etc/rancher/k3s/config.yaml. Host vars append
+# to k3s_common_node_labels (Ansible does not merge lists).
+k3s_common_node_labels:
+  - owner=kwm
+k3s_node_labels: []
+k3s_node_taints: []
+
+# Extra kubelet flags (e.g. system-reserved=cpu=500m,memory=3Gi).
+k3s_kubelet_args: []
+
+# If set, k3s uses this as node-ip (keeps flannel on LAN instead of Tailscale).
+k3s_node_ip: ""
+
+# If set, k3s uses this as the Kubernetes node name. Only set on agents —
+# renaming an existing server recreates the node and breaks local storage.
+k3s_node_name: ""
+
+# Optional API URL override for agents (HA VIP). Empty means
+# https://<first k3s_servers ansible_host>:<k3s_apiserver_port>.
+k3s_server_url: ""

@@ -1,8 +1,37 @@
 # Managed by the k3s role. k3s reads this on start and merges with CLI flags.
+{% if k3s_role == 'server' %}
 write-kubeconfig-mode: "644"
 {% if k3s_tls_sans_effective | default([]) | length > 0 %}
 tls-san:
 {% for san in k3s_tls_sans_effective %}
   - "{{ san }}"
+{% endfor %}
+{% endif %}
+{% else %}
+server: "{{ k3s_server_url_effective }}"
+token: "{{ k3s_node_token }}"
+{% endif %}
+{% if k3s_node_name | default('') | length > 0 %}
+node-name: "{{ k3s_node_name }}"
+{% endif %}
+{% if k3s_node_ip | default('') | length > 0 %}
+node-ip: "{{ k3s_node_ip }}"
+{% endif %}
+{% if k3s_node_labels_effective | default([]) | length > 0 %}
+node-label:
+{% for label in k3s_node_labels_effective %}
+  - "{{ label }}"
+{% endfor %}
+{% endif %}
+{% if k3s_node_taints | default([]) | length > 0 %}
+node-taint:
+{% for taint in k3s_node_taints %}
+  - "{{ taint }}"
+{% endfor %}
+{% endif %}
+{% if k3s_kubelet_args | default([]) | length > 0 %}
+kubelet-arg:
+{% for arg in k3s_kubelet_args %}
+  - "{{ arg }}"
 {% endfor %}
 {% endif %}
