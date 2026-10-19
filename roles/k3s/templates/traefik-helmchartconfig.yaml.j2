@@ -11,8 +11,14 @@ spec:
     ports:
       web:
         nodePort: {{ k3s_traefik_node_ports.web }}
+        transport:
+          respondingTimeouts:
+            readTimeout: 0s
       websecure:
         nodePort: {{ k3s_traefik_node_ports.websecure }}
+        transport:
+          respondingTimeouts:
+            readTimeout: 0s
     service:
       externalIPs:
 {% for ip in k3s_traefik_external_ips %}
