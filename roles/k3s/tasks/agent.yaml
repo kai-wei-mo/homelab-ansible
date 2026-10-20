@@ -65,6 +65,16 @@
   no_log: true
   register: k3s_agent_config
 
+- name: Deploy Harbor registry auth
+  ansible.builtin.template:
+    src: registries.yaml.j2
+    dest: /etc/rancher/k3s/registries.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  register: k3s_registries
+
 - name: Install k3s agent
   ansible.builtin.shell: |
     curl -sfL https://get.k3s.io | sh -
@@ -76,7 +86,7 @@
 
 - name: Restart k3s-agent to pick up config
   when:
-    - k3s_agent_config.changed
+    - k3s_agent_config.changed or k3s_registries.changed
     - k3s_binary.stat.exists
   ansible.builtin.systemd:
     name: k3s-agent

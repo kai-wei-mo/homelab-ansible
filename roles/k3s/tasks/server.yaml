@@ -54,6 +54,16 @@
     mode: "0600"
   register: k3s_server_config
 
+- name: Deploy Harbor registry auth
+  ansible.builtin.template:
+    src: registries.yaml.j2
+    dest: /etc/rancher/k3s/registries.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  register: k3s_registries
+
 - name: Install k3s
   ansible.builtin.shell: |
     curl -sfL https://get.k3s.io | sh -s - \
@@ -83,7 +93,7 @@
 
 - name: Restart k3s to pick up server config
   when:
-    - k3s_server_config.changed
+    - k3s_server_config.changed or k3s_registries.changed
     - k3s_binary.stat.exists
   ansible.builtin.systemd:
     name: k3s
